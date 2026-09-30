@@ -4,7 +4,11 @@
   "description": "A μClient extension that shows a Hello world panel. Start here for your own.",
   "type": "module",
   "exports": "./dist/index.js",
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,23 +23,40 @@
     "test": "node --test test/*.test.mjs"
   },
   "devDependencies": {
-    "@muclient/sdk": "file:./sdk",
+    "@muclient/sdk": "npm:@runmu.sh/sdk@^1.6.0",
+    "@runmu.sh/dev": "^0.1.0",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.0",
     "vue": "^3.5.0"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "muclient": {
     "id": "hello-world",
     "api": "^1.6",
     "source": "src/index.ts",
     "displayName": "Hello world",
     "description": "A panel that says hello. The starting point for a new μClient extension.",
-    "categories": ["developer"],
+    "categories": [
+      "developer"
+    ],
     "contributes": {
-      "panels": [{ "id": "hello-world", "title": "Hello world" }],
-      "commands": [{ "id": "hello-world.open", "title": "Hello world: open the panel" }]
+      "panels": [
+        {
+          "id": "hello-world",
+          "title": "Hello world"
+        }
+      ],
+      "commands": [
+        {
+          "id": "hello-world.open",
+          "title": "Hello world: open the panel"
+        }
+      ]
     },
-    "capabilities": ["send-commands"]
+    "capabilities": [
+      "send-commands"
+    ]
   }
 }

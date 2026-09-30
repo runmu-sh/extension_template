@@ -6,13 +6,18 @@ button on GitHub, or clone it, and you have a project that builds, type-checks a
 the client.
 
 ```sh
-git clone https://github.com/runmu-sh/extension_template my-ext
+npm create @runmu.sh/extension my-ext    # the scaffolder: asks for an id, a name, Vue or DOM, WASM
+# or: git clone https://github.com/runmu-sh/extension_template my-ext
 cd my-ext
 npm install
 npm run dev
 ```
 
-Then in μClient: **Extensions → Developer → load from dev server**, with `http://localhost:5199/`.
+`npm create @runmu.sh/extension` writes a fresh project with your id and names filled in. This
+template is the same thing with three worked examples; the guide is
+[runmu.sh/docs/extensions/quickstart](https://runmu.sh/docs/extensions/quickstart).
+
+Then in μClient: **☰ → Extensions → Advanced → Developer → load from dev server**, with `http://localhost:5199/`.
 The Hello world panel appears under Views. Edit `src/panel.ts`, save, and the panel updates in place.
 
 ## What is in here
@@ -25,9 +30,8 @@ The Hello world panel appears under Views. Edit `src/panel.ts`, save, and the pa
 | `examples/vue-panel/` | The same panel as a Vue component (`mu.panels.vue`). |
 | `examples/gmcp-room/` | GMCP `Room.Info` → per-world storage → a table of visited rooms. |
 | `examples/line-trigger/` | A line pipeline stage, settings that drive it, a HUD widget, and the Lua `ext.emit` bridge. |
-| `sdk/` | A copy of the `@muclient/sdk` types (v1.6). Type checking only; the client supplies the real module at runtime. |
 | `scripts/build.mjs` | esbuild → `dist/index.js`, then the manifest check. |
-| `scripts/dev.mjs`, `scripts/dev-server.mjs` | The dev server: rebuild on save, serve on localhost, push reloads over SSE. |
+| `scripts/dev.mjs` | Starts the dev server (`@runmu.sh/dev`): rebuild on save, serve on localhost, push reloads over SSE. |
 | `scripts/manifest.mjs` | The manifest rules μClient applies at install, so the build fails where the install would. |
 | `test/build.test.mjs` | Builds everything and checks the bundles: `npm test`. |
 
@@ -38,7 +42,7 @@ npm run dev                       # dev server for src/ on http://localhost:5199
 npm run dev examples/gmcp-room    # dev server for an example (add -- --port 5200 for a second one)
 npm run build                     # src/index.ts → dist/index.js + manifest check
 npm run build:examples            # the root and every example
-npm run typecheck                 # tsc --noEmit against sdk/
+npm run typecheck                 # tsc --noEmit against the SDK types
 npm test                          # build all, check manifests and externals, typecheck
 ```
 
@@ -170,15 +174,18 @@ to it; the install prompt shows the publisher key.
 
 ## The SDK
 
-`sdk/index.ts` is the whole contract, with a `@since` on each member. The full specification, with
+`@muclient/sdk` is installed from npm as an alias of [`@runmu.sh/sdk`](https://www.npmjs.com/package/@runmu.sh/sdk)
+(`"@muclient/sdk": "npm:@runmu.sh/sdk@^1.6.0"`): the import keeps the name μClient's import map
+resolves, and the build leaves it external. Its `index.d.ts` is the whole contract, with a `@since` on
+each member; every member is documented at [runmu.sh/docs/reference/sdk](https://runmu.sh/docs/reference/sdk/). The full specification, with
 the hosting rules, the registry index format and the trust model, is
 [`docs/overhaul/08-extensions.md`](https://github.com/runmu-sh/client/blob/main/docs/overhaul/08-extensions.md)
 in the client repo. The first-party extensions in
 [`clients/extensions/`](https://github.com/runmu-sh/client/tree/main/clients/extensions) are larger
 worked examples: `ext-webpages` is thirty lines, `ext-vitals` draws gauges, `ext-scene` is the Scene panel.
 
-To update the types when a new SDK ships, copy `clients/extensions/sdk/index.ts` over `sdk/index.ts`
-and raise `muclient.api` if you use the new members.
+To update the types when a new SDK ships, `npm i -D @muclient/sdk@npm:@runmu.sh/sdk@latest` and raise
+`muclient.api` if you use the new members.
 
 ## License
 

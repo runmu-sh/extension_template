@@ -3,14 +3,14 @@
  * `npm run dev [folder] [-- --port 5200]`: start the μClient extension dev server on this extension,
  * or on one of the examples (`npm run dev examples/gmcp-room`).
  *
- * The server is `scripts/dev-server.mjs`, a copy of `@muclient/dev` from the μClient repo
- * (clients/extensions/dev/serve.mjs). It rebuilds `src/` on every save and pushes a hot reload to
- * μClient over Server-Sent Events. Set MUCLIENT_DEV to a path to use another copy.
+ * The server is the `@runmu.sh/dev` devDependency. It rebuilds `src/` on every save and pushes a hot
+ * reload to μClient over Server-Sent Events. Set MUCLIENT_DEV to a path to use another copy.
  *
  * In μClient: Extensions → Developer → "load from dev server" with http://localhost:5199/, or open
  * μClient with ?ext-dev=http://localhost:5199/.
  */
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,7 +25,7 @@ for (let i = 0; i < args.length; i++) {
   if (a.startsWith('-')) { rest.push(a); continue; }
   if (folder === '.') folder = a; else rest.push(a);
 }
-const serve = process.env.MUCLIENT_DEV || join(ROOT, 'scripts', 'dev-server.mjs');
+const serve = process.env.MUCLIENT_DEV || createRequire(join(ROOT, 'package.json')).resolve('@runmu.sh/dev');
 
 const child = spawn(process.execPath, [serve, resolve(ROOT, folder), ...rest], { stdio: 'inherit' });
 for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => child.kill(s));

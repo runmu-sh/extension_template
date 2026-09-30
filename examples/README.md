@@ -1,7 +1,7 @@
 # Examples
 
 Each folder is a complete extension: its own `package.json` manifest and a `src/index.ts`. They share
-the root's `node_modules`, `sdk/` and scripts.
+the root's `node_modules` and scripts.
 
 ```sh
 npm run build:examples                   # build all of them

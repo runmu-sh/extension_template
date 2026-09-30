@@ -1,0 +1,22 @@
+{
+  "name": "ext-example-gmcp-room",
+  "version": "0.1.0",
+  "description": "Example: follow GMCP Room.Info, count visits per room in per-world storage, show them in a panel.",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "license": "MIT",
+  "muclient": {
+    "id": "example-gmcp-room",
+    "api": "^1.6",
+    "source": "src/index.ts",
+    "displayName": "Example: GMCP room visits",
+    "description": "Listens to GMCP Room.Info, keeps a visit count per room in per-world storage, and lists the most visited rooms.",
+    "categories": ["developer", "mapping"],
+    "contributes": {
+      "panels": [{ "id": "example-gmcp-room", "title": "Room visits" }],
+      "commands": [{ "id": "example-gmcp-room.clear", "title": "Room visits: forget this world's counts" }],
+      "gmcp": ["Room 1"]
+    },
+    "capabilities": ["read-output"]
+  }
+}

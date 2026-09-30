@@ -1,0 +1,8 @@
+{
+  "name": "@muclient/sdk",
+  "version": "1.6.0",
+  "private": true,
+  "type": "module",
+  "description": "Types for μClient extensions. At runtime the host supplies this module through its import map; this copy is for the type checker only. Source of truth: clients/extensions/sdk/index.ts in github.com/runmu-sh/client.",
+  "exports": "./index.ts"
+}

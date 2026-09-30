@@ -1,0 +1,20 @@
+{
+  "name": "ext-example-vue-panel",
+  "version": "0.1.0",
+  "description": "Example: the Hello world panel as a Vue component.",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "license": "MIT",
+  "muclient": {
+    "id": "example-vue-panel",
+    "api": "^1.6",
+    "source": "src/index.ts",
+    "displayName": "Example: Vue panel",
+    "description": "The Hello world panel written as a Vue component mounted with mu.panels.vue.",
+    "categories": ["developer"],
+    "contributes": {
+      "panels": [{ "id": "example-vue-panel", "title": "Vue panel" }]
+    },
+    "capabilities": ["send-commands"]
+  }
+}

@@ -45,7 +45,9 @@ export function mountPanel(mu: Mu, el: HTMLElement, sid: string | null): () => v
   // Redraw when the setting changes. The disposable is tracked by mu, but we also stop it on unmount
   // so a closed panel does not keep drawing into a detached element.
   const stopWatch = mu.settings.watch('name', draw);
+  // And when this session connects or drops, so the state line stays true.
+  const stopState = sid ? mu.sessions.on('state', draw, { sid }) : () => {};
   draw();
 
-  return () => { stopWatch(); };
+  return () => { stopWatch(); stopState(); };
 }

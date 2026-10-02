@@ -7,16 +7,36 @@
   "license": "MIT",
   "muclient": {
     "id": "example-gmcp-room",
-    "api": "^1.6",
+    "api": "^1.12",
     "source": "src/index.ts",
     "displayName": "Example: GMCP room visits",
     "description": "Listens to GMCP Room.Info, keeps a visit count per room in per-world storage, and lists the most visited rooms.",
-    "categories": ["developer", "mapping"],
+    "categories": [
+      "developer",
+      "mapping"
+    ],
     "contributes": {
-      "panels": [{ "id": "example-gmcp-room", "title": "Room visits" }],
-      "commands": [{ "id": "example-gmcp-room.clear", "title": "Room visits: forget this world's counts" }],
-      "gmcp": ["Room 1"]
+      "panels": [
+        {
+          "id": "example-gmcp-room",
+          "title": "Room visits"
+        }
+      ],
+      "commands": [
+        {
+          "id": "example-gmcp-room.clear",
+          "title": "Room visits: forget this world's counts"
+        }
+      ],
+      "gmcp": [
+        "Room 1"
+      ],
+      "storage": {
+        "world": [
+          "visits"
+        ]
+      }
     },
-    "capabilities": ["read-output"]
+    "capabilities": []
   }
 }

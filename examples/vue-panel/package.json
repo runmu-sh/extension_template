@@ -7,14 +7,34 @@
   "license": "MIT",
   "muclient": {
     "id": "example-vue-panel",
-    "api": "^1.6",
+    "api": "^1.12",
     "source": "src/index.ts",
     "displayName": "Example: Vue panel",
-    "description": "The Hello world panel written as a Vue component mounted with mu.panels.vue.",
-    "categories": ["developer"],
+    "description": "The Hello world panel written as a Vue component mounted with mu.panels.vue, with a per-session count in mu.storage.session.",
+    "categories": [
+      "developer"
+    ],
     "contributes": {
-      "panels": [{ "id": "example-vue-panel", "title": "Vue panel" }]
+      "panels": [
+        {
+          "id": "example-vue-panel",
+          "title": "Vue panel"
+        }
+      ],
+      "commands": [
+        {
+          "id": "example-vue-panel.open",
+          "title": "Vue panel: open"
+        }
+      ],
+      "storage": {
+        "session": [
+          "count"
+        ]
+      }
     },
-    "capabilities": ["send-commands"]
+    "capabilities": [
+      "send-commands"
+    ]
   }
 }

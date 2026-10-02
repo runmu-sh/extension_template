@@ -1,14 +1,20 @@
 /**
  * Example: GMCP and storage.
  *
- *  - `mu.gmcp.supports(['Room 1'])` tells the game to send the Room package (Core.Supports.Add on
- *    every connected session; Remove when the extension is disposed).
- *  - `mu.gmcp.on('Room.Info', …)` receives each room. The handler gets the session id, so one
- *    extension serves every open session.
- *  - `mu.storage.world(worldId)` is a key-value store per world that survives reloads, reinstalls and
- *    devices (it is synced with the account). `mu.storage.global` is the same for all worlds.
- *  - `mu.gmcp.state('Room.Info', sid)` is the last value seen, handy when a panel mounts after the
- *    room arrived.
+ *  - `"gmcp": ["Room 1"]` in package.json `muclient.contributes` asks the game for the Room package. μClient
+ *    declares it (Core.Supports.Add) on every session of a world where the extension is enabled, before
+ *    activation too, and withdraws it on disable. Call `mu.gmcp.supports` only for packages that depend on
+ *    runtime state.
+ *  - `mu.gmcp.on('Room.Info', …)` receives each room. The handler gets an envelope (`meta.sid`, `meta.worldId`,
+ *    `meta.replay`), so one extension serves every open session. An extension that activates while a session
+ *    is open first gets the last Room.Info again with `replay: true`: that is not a new visit, so it is not
+ *    counted.
+ *  - `mu.storage.world(worldId)` is a key-value store per world on this device that survives reloads and
+ *    reinstalls. `.watch(key, fn)` sees writes from this tab and the extension's other tabs, so the panel
+ *    redraws from storage instead of a hand-made listener list.
+ *  - `mu.gmcp.watch('Room.Info', fn, { sid })` calls `fn` with the current room at once and on every change:
+ *    the panel needs no "last value" lookup when it mounts after the room arrived.
+ *  - `mu.ui.confirm` is the host's dialog, used before the command throws the counts away.
  */
 import { defineExtension, type Mu } from '@muclient/sdk';
 
@@ -20,33 +26,30 @@ interface Visits { [roomKey: string]: { name: string; area: string; n: number } 
 export default defineExtension({
   activate(ctx) {
     const mu: Mu = ctx.mu;
-    const redraws = new Set<() => void>();
-    const redraw = () => redraws.forEach((f) => f());
 
-    const worldOf = (sid: string) => mu.sessions.list().find((s) => s.id === sid)?.worldId ?? null;
-    const visitsOf = (worldId: string | null): Visits => mu.storage.world(worldId).get<Visits>('visits', {});
+    const worldOf = (sid: string | null) => (sid ? mu.sessions.list().find((s) => s.id === sid)?.worldId ?? null : null);
+    const store = (worldId: string | null) => mu.storage.world(worldId);
+    const visitsOf = (worldId: string | null): Visits => store(worldId).get<Visits>('visits', {});
 
-    mu.gmcp.supports(['Room 1']);
-    mu.gmcp.on('Room.Info', (data, { sid }) => {
-      const d = (data ?? {}) as Record<string, unknown>;
-      const key = String(d.num ?? d.id ?? d.name ?? '');
+    mu.gmcp.on('Room.Info', (d, meta) => {
+      if (meta.replay) return; // delivered again on (re)activation: the player did not move
+      const key = String(d?.num ?? d?.name ?? '');
       if (!key) return;
-      const worldId = worldOf(sid);
+      const worldId = meta.worldId ?? worldOf(meta.sid);
       const visits = visitsOf(worldId);
-      const prev = visits[key];
-      visits[key] = { name: String(d.name ?? key), area: String(d.area ?? ''), n: (prev?.n ?? 0) + 1 };
-      mu.storage.world(worldId).set('visits', visits);
-      redraw();
+      visits[key] = { name: String(d?.name ?? key), area: String(d?.area ?? ''), n: (visits[key]?.n ?? 0) + 1 };
+      store(worldId).set('visits', visits);
     });
 
     mu.commands.register({
       id: `${ID}.clear`,
       title: 'Room visits: forget this world\'s counts',
-      run: () => {
-        const sid = mu.sessions.active()?.id;
-        mu.storage.world(sid ? worldOf(sid) : null).delete('visits');
+      run: async () => {
+        const worldId = worldOf(mu.sessions.active()?.id ?? null);
+        const ok = await mu.ui.confirm({ title: 'Forget the room counts for this world?', confirm: 'Forget', danger: true });
+        if (!ok) return;
+        store(worldId).delete('visits');
         mu.ui.toast('Room visits', 'Counts cleared for this world.', { kind: 'example' });
-        redraw();
       },
     });
 
@@ -71,11 +74,10 @@ export default defineExtension({
         const rows = el.querySelector<HTMLElement>('[data-testid=rv-rows]')!;
         const empty = el.querySelector<HTMLElement>('[data-testid=rv-empty]')!;
 
-        const draw = () => {
-          const s = sid ?? mu.sessions.active()?.id ?? null;
-          const room = s ? (mu.gmcp.state('Room.Info', s) as Record<string, unknown> | undefined) : undefined;
-          current.textContent = room?.name ? String(room.name) : 'Waiting for Room.Info…';
-          const visits = Object.values(visitsOf(s ? worldOf(s) : null)).sort((a, b) => b.n - a.n).slice(0, MAX_ROWS);
+        const s = sid ?? mu.sessions.active()?.id ?? null;
+        const worldId = worldOf(s);
+        const drawRows = () => {
+          const visits = Object.values(visitsOf(worldId)).sort((a, b) => b.n - a.n).slice(0, MAX_ROWS);
           rows.replaceChildren(...visits.map((v) => {
             const tr = document.createElement('tr');
             const name = document.createElement('td');
@@ -90,9 +92,14 @@ export default defineExtension({
           empty.textContent = visits.length ? '' : 'No rooms seen yet. Move around.';
           empty.hidden = visits.length > 0;
         };
-        redraws.add(draw);
-        draw();
-        return () => { redraws.delete(draw); };
+
+        current.textContent = 'Waiting for Room.Info…';
+        const stopRoom = s
+          ? mu.gmcp.watch('Room.Info', (room) => { current.textContent = room?.name ? String(room.name) : 'Waiting for Room.Info…'; }, { sid: s })
+          : () => {};
+        const stopRows = store(worldId).watch('visits', drawRows);
+        drawRows();
+        return () => { stopRoom(); stopRows(); };
       },
     });
   },

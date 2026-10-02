@@ -1,23 +1,31 @@
 /**
- * Example: the line pipeline, settings, widgets and the Lua bridge.
+ * Example: the line pipeline, settings, per-session state, widgets and the Lua bridge.
  *
- *  - `mu.lines.stage` runs on every line after μClient's own parser and classifier (order ≥ 300).
- *    It may change `line.category` / `line.rowCls`, `ctx.gag()` the line, or `ctx.after(text)` to
- *    add a local line below it. Keep it fast: a stage over 50 ms for 20 lines in a row is suspended.
+ *  - `mu.lines.stage({ phase })` runs on every line in one phase of μClient's line host. A `highlight` stage
+ *    styles text with theme tokens (`line.highlight(re, { fg: 'accent' })`, never a literal colour) and adds
+ *    row classes; a `route` stage may `gag` a line. Phases that change what the game said (`transform`,
+ *    `route`) are declared in package.json `muclient.contributes.linePhases`, and the install prompt says so.
+ *    Keep stages fast: one over 8 ms on 20 lines in a row is suspended for the session.
+ *  - Backlog and history lines pass through the stages again with `line.replay` set. They are styled the same,
+ *    but not counted: the count is for what happens now.
  *  - `mu.settings.define` puts the patterns on a Settings page, so a player can change them without
- *    touching code. `mu.settings.watch` recompiles when they do.
+ *    touching code. `mu.settings.watch` gives the current value at once and recompiles when it changes.
+ *  - Per-session state lives in `mu.sessions.each`: setup runs for every session in scope, and what it
+ *    returns runs when the session closes or its world disables the extension. A module-level Map keyed by
+ *    sid would never be cleared.
  *  - `mu.widgets.show` places a card on the HUD; `mu.lua.on` receives what a backend Lua trigger
  *    sends with `ext.emit('example.alert', { text = '...' })`.
  *
  * Game automation (triggers that send commands) belongs in μClient's Lua, not here: an extension
- * is a UI surface. This stage only decorates.
+ * is a UI surface. These stages only decorate.
  */
 import { defineExtension, type Mu } from '@muclient/sdk';
 
 const ID = 'example-line-trigger';
+const HIT = `ext-${ID}-hit` as const; // an extension's own row classes carry the `ext-<id>-` prefix
 
-function compile(src: string): RegExp | null {
-  if (!src.trim()) return null;
+function compile(src: string | undefined): RegExp | null {
+  if (!src?.trim()) return null;
   try { return new RegExp(src, 'i'); } catch { return null; }
 }
 
@@ -34,35 +42,49 @@ export default defineExtension({
       ],
     });
 
-    let highlight = compile(mu.settings.get<string>('highlight'));
-    let gag = compile(mu.settings.get<string>('gag'));
+    let highlight: RegExp | null = null;
+    let gag: RegExp | null = null;
     mu.settings.watch<string>('highlight', (v) => { highlight = compile(v); });
     mu.settings.watch<string>('gag', (v) => { gag = compile(v); });
 
-    // The `hl-line` row class is one of μClient's own; `mu.ui.style` adds a class of our own too.
-    mu.ui.style(`.${ID}-hit { border-left: 2px solid var(--accent); padding-left: 4px; }`);
+    // Our own row class, styled from theme variables so it follows the player's theme.
+    mu.ui.style(`.${HIT} { border-left: 2px solid var(--accent); padding-left: 4px; }`);
 
-    const hits = new Map<string, number>(); // sid → matches this session
+    // sid → matches in this session; each session's entry goes when the session leaves scope.
+    const hits = new Map<string, number>();
+    mu.sessions.each((s) => {
+      hits.set(s.id, 0);
+      return () => { hits.delete(s.id); };
+    });
+
     const showCount = (sid: string) => {
-      if (mu.settings.get<boolean>('count') === false) { mu.widgets.close(`${ID}.count`, sid); return; }
+      if (mu.settings.get<boolean>('count', { sid }) === false) { mu.widgets.close(`${ID}.count`, sid); return; }
+      const n = hits.get(sid) ?? 0;
       mu.widgets.show({
         id: `${ID}.count`, type: 'card', title: 'Matches',
-        body: `${hits.get(sid) ?? 0} line${hits.get(sid) === 1 ? '' : 's'} matched ${highlight?.source ?? ''}`,
+        body: `${n} line${n === 1 ? '' : 's'} matched ${highlight?.source ?? ''}`,
         dismissible: true,
       }, sid);
     };
 
     mu.lines.stage({
-      id: `${ID}.stage`,
-      order: 300,
+      id: `${ID}.highlight`,
+      phase: 'highlight',
       run(line, lc) {
-        if (line.kind !== 'output') return;
-        if (gag?.test(line.text)) { lc.gag(); return; }
-        if (highlight?.test(line.text)) {
-          line.rowCls = `${line.rowCls ?? ''} ${ID}-hit`.trim();
-          hits.set(lc.sid, (hits.get(lc.sid) ?? 0) + 1);
-          showCount(lc.sid);
-        }
+        if (line.kind !== 'output' || !highlight?.test(line.text)) return;
+        line.highlight(highlight, { fg: 'accent', bold: true });
+        line.rowClass(HIT);
+        if (line.replay === true || !hits.has(lc.sid)) return; // backlog and history: styled, not counted
+        hits.set(lc.sid, hits.get(lc.sid)! + 1);
+        showCount(lc.sid);
+      },
+    });
+
+    mu.lines.stage({
+      id: `${ID}.gag`,
+      phase: 'route',
+      run(line) {
+        if (line.kind === 'output' && gag?.test(line.text)) line.gag();
       },
     });
 
@@ -80,5 +102,8 @@ export default defineExtension({
     // A timer is not registered through mu, so it goes into ctx.subscriptions to be cleared on deactivate.
     const t = setInterval(() => mu.log.info('still watching lines'), 5 * 60_000);
     ctx.subscriptions.push(() => clearInterval(t));
+
+    // The API other extensions (and the tests) can reach: matches so far in a session.
+    return { hits: (sid: string) => hits.get(sid) ?? 0 };
   },
 });

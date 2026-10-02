@@ -5,7 +5,13 @@
  * Vue, so there is one Vue on the page and no second copy to ship. There is no SFC compiler in the
  * toolchain, so components are written with `defineComponent` and `h()` render functions.
  * `mu.panels.vue(Component)` turns the component into a `mount` function; the host passes the props
- * `sid`, `worldId` and `params`.
+ * `sid`, `worldId` and `params`. For dialogs and menus use the host's (`mu.ui.confirm`, `mu.menus`) or the
+ * components of `@muclient/ui` (external too; types in `@muclient/sdk/ui`) rather than building your own.
+ *
+ * The hello count is per session, so it lives in `mu.storage.session(sid)`: shared by every client attached to
+ * that session (another tab, another device), gone when the session ends, and never mixed up between two open
+ * sessions the way one module-level counter would be. `store.watch` re-renders when any of those clients
+ * changes it.
  */
 import { defineExtension, type Mu } from '@muclient/sdk';
 import { defineComponent, h, onBeforeUnmount, ref } from 'vue';
@@ -14,9 +20,6 @@ const ID = 'example-vue-panel';
 
 function createPanel(mu: Mu) {
   const c = mu.ui.css;
-  // Module-level state survives a remount of the component; it does not survive a hot reload of the
-  // whole extension (use snapshot/restore for that, as in the root extension).
-  const count = ref(0);
 
   return defineComponent({
     name: 'HelloVuePanel',
@@ -26,14 +29,20 @@ function createPanel(mu: Mu) {
       params: { type: Object, default: () => ({}) },
     },
     setup(props) {
-      const tick = ref(0);
-      const stop = mu.sessions.on('switch', () => { tick.value++; });
-      onBeforeUnmount(stop);
+      const store = props.sid ? mu.storage.session(props.sid) : null;
+      const count = ref(store?.get<number>('count', 0) ?? 0);
+      const tick = ref(0); // the session's link state is read in render; bump to re-render on a change
+      const stops = [
+        store?.watch<number>('count', (v) => { count.value = v ?? 0; }),
+        props.sid ? mu.sessions.on('state', () => { tick.value++; }, { sid: props.sid }) : undefined,
+      ];
+      onBeforeUnmount(() => stops.forEach((s) => s?.()));
 
       const say = () => {
-        if (!props.sid) return;
-        count.value++;
-        void mu.sessions.send(`say Hello from Vue, take ${count.value}`, props.sid);
+        if (!props.sid || !store) return;
+        const n = count.value + 1;
+        store.set('count', n);
+        void mu.sessions.send(`say Hello from Vue, take ${n}`, props.sid);
       };
 
       return () => {
@@ -42,7 +51,7 @@ function createPanel(mu: Mu) {
         return h('div', { style: 'display:flex;flex-direction:column;gap:8px;padding:8px 10px;height:100%;font-size:var(--t-body, .8rem)' }, [
           h('div', { class: c.secHead }, 'Hello from Vue'),
           h('div', { class: c.glow }, s ? `${s.worldName} · ${s.state}` : 'No session'),
-          h('p', { class: c.empty }, `Said hello ${count.value} time${count.value === 1 ? '' : 's'}.`),
+          h('p', { class: c.empty }, `Said hello ${count.value} time${count.value === 1 ? '' : 's'} in this session.`),
           h('div', { style: 'margin-top:auto' }, [
             h('button', { class: c.btn, type: 'button', disabled: !props.sid, onClick: say }, 'say hello'),
           ]),

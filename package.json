@@ -1,6 +1,6 @@
 {
   "name": "ext-hello-world",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A μClient extension that shows a Hello world panel. Start here for your own.",
   "type": "module",
   "exports": "./dist/index.js",
@@ -23,8 +23,8 @@
     "test": "node --test test/*.test.mjs"
   },
   "devDependencies": {
-    "@muclient/sdk": "npm:@runmu.sh/sdk@^1.6.0",
-    "@runmu.sh/dev": "^0.1.0",
+    "@muclient/sdk": "npm:@runmu.sh/sdk@^1.12.0",
+    "@runmu.sh/dev": "^0.2.0",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.0",
     "vue": "^3.5.0"
@@ -34,7 +34,7 @@
   },
   "muclient": {
     "id": "hello-world",
-    "api": "^1.6",
+    "api": "^1.12",
     "source": "src/index.ts",
     "displayName": "Hello world",
     "description": "A panel that says hello. The starting point for a new μClient extension.",

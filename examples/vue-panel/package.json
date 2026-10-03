@@ -7,7 +7,7 @@
   "license": "MIT",
   "muclient": {
     "id": "example-vue-panel",
-    "api": "^1.12",
+    "api": "^1.14",
     "source": "src/index.ts",
     "displayName": "Example: Vue panel",
     "description": "The Hello world panel written as a Vue component mounted with mu.panels.vue, with a per-session count in mu.storage.session.",

@@ -7,7 +7,7 @@
   "license": "MIT",
   "muclient": {
     "id": "example-gmcp-room",
-    "api": "^1.12",
+    "api": "^1.14",
     "source": "src/index.ts",
     "displayName": "Example: GMCP room visits",
     "description": "Listens to GMCP Room.Info, keeps a visit count per room in per-world storage, and lists the most visited rooms.",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- SDK 1.14: `"@muclient/sdk": "npm:@runmu.sh/sdk@^1.14.0"`, `@runmu.sh/dev` `^0.3.0`, `muclient.api` `^1.14`
+  in the root and every example, as `npm create @runmu.sh/extension` 0.5.0 generates.
+- README: settings `tile` and the `shortcut` item kind. The SDK link points at `clients/extensions/sdk/index.ts`.
+
 ## 0.2.0
 
 - SDK 1.12: `"@muclient/sdk": "npm:@runmu.sh/sdk@^1.12.0"`, `@runmu.sh/dev` `^0.2.0`, `muclient.api` `^1.12`

@@ -7,7 +7,7 @@
   "license": "MIT",
   "muclient": {
     "id": "example-line-trigger",
-    "api": "^1.12",
+    "api": "^1.14",
     "source": "src/index.ts",
     "displayName": "Example: line trigger",
     "description": "Phased line stages that highlight lines matching a pattern from Settings and gag another, a per-session match count on the HUD, and a card when Lua emits an event.",

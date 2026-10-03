@@ -64,7 +64,7 @@ Edit `package.json`:
   "exports": "./dist/index.js",    // the built entry; μClient loads this file
   "muclient": {
     "id": "my-thing",              // [a-z0-9][a-z0-9._-]{0,63}; prefix for panel and command ids
-    "api": "^1.12",                // a semver range of the SDK you need; μClient refuses one it cannot satisfy
+    "api": "^1.14",                // a semver range of the SDK you need; μClient refuses one it cannot satisfy
     "source": "src/index.ts",      // what the dev server and build compile
     "displayName": "My thing",
     "description": "Shown in the install prompt and the Extensions list.",
@@ -177,7 +177,9 @@ extension. Effects run where the player is (`mu.effects.owner(sid)`); a send tha
 Each store has `get`/`set`/`delete`, `keys(prefix)`, `watch(key, fn)` (changes from this and other tabs and
 devices) and `collection(name)` for lists that two devices may add to at once. `mu.settings.define(schema)` gives
 the player a Settings page and you `mu.settings.get(key)` / `watch(key, fn)`; values resolve world → all worlds →
-default, and follow the account unless a setting says `sync: 'device'`.
+default, and follow the account unless a setting says `sync: 'device'`. Since 1.14 a `tile: { glyph: '⇶' }` puts the
+page on the Settings hub, and a `{ key: 'openKey', kind: 'shortcut', command: 'hello-world.open' }` item binds a key
+to one of your commands in the player's key bindings.
 
 ### 6. Test headless
 
@@ -231,11 +233,10 @@ to it; the install prompt shows the publisher key.
 ## The SDK
 
 `@muclient/sdk` is installed from npm as an alias of [`@runmu.sh/sdk`](https://www.npmjs.com/package/@runmu.sh/sdk)
-(`"@muclient/sdk": "npm:@runmu.sh/sdk@^1.12.0"`): the import keeps the name μClient's import map
+(`"@muclient/sdk": "npm:@runmu.sh/sdk@^1.14.0"`): the import keeps the name μClient's import map
 resolves, and the build leaves it external. Its `index.d.ts` is the whole contract, with a `@since` on
-each member; every member is documented at [runmu.sh/docs/reference/sdk](https://runmu.sh/docs/reference/sdk/). The full specification, with
-the hosting rules, the registry index format and the trust model, is
-[`docs/overhaul/08-extensions.md`](https://github.com/runmu-sh/client/blob/main/docs/overhaul/08-extensions.md)
+each member; every member is documented at [runmu.sh/docs/reference/sdk](https://runmu.sh/docs/reference/sdk/). The source is
+[`clients/extensions/sdk/index.ts`](https://github.com/runmu-sh/client/blob/main/clients/extensions/sdk/index.ts)
 in the client repo. The first-party extensions in
 [`clients/extensions/`](https://github.com/runmu-sh/client/tree/main/clients/extensions) are larger
 worked examples: `ext-webpages` is thirty lines, `ext-vitals` draws gauges, `ext-scene` is the Scene panel.
